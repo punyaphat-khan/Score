@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Score & Learn</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="theme-color" content="#FF7A3D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Score & Learn">
+<style>
+  :root{
+    --orange:#FF7A3D;
+    --orange-deep:#F0632A;
+    --green:#2FA84F;
+    --green-deep:#1E7F3A;
+    --yellow:#FFC93C;
+    --ink:#20180F;
+    --cream:#FFF8EC;
+    --red:#E9503B;
+    --locked:#C9C2B6;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    height:100%;
+    background:var(--orange);
+    font-family: ui-rounded, "Segoe UI Rounded", "Segoe UI", system-ui, sans-serif;
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+  body{
+    background:
+      radial-gradient(circle at 8% 6%, rgba(255,255,255,0.12) 0 90px, transparent 91px),
+      radial-gradient(circle at 92% 10%, rgba(255,255,255,0.12) 0 70px, transparent 71px),
+      radial-gradient(circle at 90% 60%, rgba(0,0,0,0.06) 0 110px, transparent 111px),
+      radial-gradient(circle at 5% 70%, rgba(0,0,0,0.06) 0 90px, transparent 91px),
+      var(--orange);
+  }
+
+  .deco{
+    position:fixed;
+    font-size:34px;
+    opacity:0.7;
+    filter: drop-shadow(0 3px 0 rgba(0,0,0,0.15));
+    pointer-events:none;
+    z-index:0;
+  }
+
+  #wrap{
+    position:relative;
+    z-index:1;
+    max-width:480px;
+    margin:0 auto;
+    padding:26px 18px 70px;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom:8px;
+  }
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:var(--cream);
+    border:4px solid var(--ink);
+    border-radius:999px;
+    padding:8px 20px 8px 12px;
+    box-shadow:0 5px 0 var(--ink);
+  }
+  .badge .ball{
+    font-size:30px;
+    line-height:1;
+    animation: spin 6s linear infinite;
+  }
+  @keyframes spin{ from{ transform:rotate(0deg);} to{ transform:rotate(360deg);} }
+  h1{
+    font-size:23px;
+    margin:0;
+    letter-spacing:0.2px;
+  }
+  .tagline{
+    margin:12px 0 0;
+    font-size:14.5px;
+    font-weight:700;
+    color:#5A3E22;
+  }
+
+  .stats-row{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin:18px 0 10px;
+  }
+  .stat-chip{
+    background:var(--cream);
+    border:3px solid var(--ink);
+    border-radius:14px;
+    padding:6px 12px;
+    font-size:13px;
+    font-weight:800;
+    box-shadow:0 3px 0 var(--ink);
+    display:flex;
+    align-items:center;
+    gap:5px;
+  }
+
+  .unit-banner{
+    position:relative;
+    z-index:2;
+    background:var(--green-deep);
+    color:var(--cream);
+    border:4px solid var(--ink);
+    border-radius:14px;
+    padding:10px 18px;
+    font-size:14px;
+    font-weight:800;
+    text-align:center;
+    box-shadow:0 5px 0 var(--ink);
+    margin:0 auto 40px;
+    max-width:260px;
+  }
+  .install-btn{
+    display:block;
+    margin:0 auto 18px;
+    background:var(--ink);
+    color:var(--cream);
+    border:none;
+    padding:10px 20px;
+    border-radius:999px;
+    font-size:13.5px;
+    font-weight:800;
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .path-area{
+    position:relative;
+    margin-top:26px;
+  }
+  .path-area svg{
+    position:absolute;
+    top:0; left:0;
+    width:100%;
+    height:100%;
+    z-index:0;
+  }
+  .level-node{
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    margin-bottom:46px;
+  }
+  .node-btn{
+    width:84px; height:84px;
+    border-radius:50%;
+    border:5px solid var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:34px;
+    cursor:pointer;
+    position:relative;
+    touch-action:manipulation;
+    box-shadow:0 7px 0 var(--ink);
+  }
+  .node-btn:active{
+    transform:translateY(4px);
+    box-shadow:0 3px 0 var(--ink);
+  }
+  .node-btn.unlocked{
+    background:var(--green);
+    animation: bounce 2.2s ease-in-out infinite;
+  }
+  @keyframes bounce{
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .node-btn.locked{
+    background:var(--locked);
+    filter: grayscale(0.15);
+  }
+  .node-btn .lock{
+    position:absolute;
+    bottom:-6px;
+    right:-6px;
+    background:var(--red);
+    border:3px solid var(--ink);
+    border-radius:50%;
+    width:30px; height:30px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:14px;
+  }
+  .level-num{
+    position:absolute;
+    top:-10px;
+    left:-10px;
+    background:var(--yellow);
+    border:3px solid var(--ink);
+    border-radius:50%;
+    width:28px; height:28px;
+    font-size:13px;
+    font-weight:900;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .node-label{
+    margin-top:10px;
+    background:var(--cream);
+    border:3px solid var(--ink);
+    border-radius:10px;
+    padding:7px 14px 8px;
+    max-width:180px;
+    text-align:center;
+    box-shadow:0 3px 0 var(--ink);
+  }
+  .node-title{
+    font-size:12.5px;
+    font-weight:800;
+  }
+  .node-blurb{
+    font-size:10.5px;
+    font-weight:600;
+    color:#6B5A45;
+    margin-top:3px;
+    line-height:1.35;
+  }
+  .node-stars{
+    font-size:11px;
+    color:var(--orange-deep);
+    margin-top:4px;
+    letter-spacing:1px;
+  }
+  .start-chip{
+    position:absolute;
+    top:-38px;
+    background:var(--ink);
+    color:var(--cream);
+    font-size:12px;
+    font-weight:800;
+    padding:5px 12px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .start-chip::after{
+    content:'';
+    position:absolute;
+    bottom:-6px; left:50%;
+    transform:translateX(-50%);
+    border-width:6px 6px 0 6px;
+    border-style:solid;
+    border-color:var(--ink) transparent transparent transparent;
+  }
+
+  footer{
+    text-align:center;
+    margin-top:30px;
+    font-size:12.5px;
+    font-weight:700;
+    color:#5A3E22;
+    line-height:1.5;
+  }
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:26px;
+    transform:translate(-50%, 130%);
+    background:var(--ink);
+    color:var(--cream);
+    font-size:13.5px;
+    font-weight:700;
+    padding:12px 20px;
+    border-radius:14px;
+    max-width:86%;
+    text-align:center;
+    box-shadow:0 6px 18px rgba(0,0,0,0.35);
+    transition:transform .25s ease;
+    z-index:5;
+  }
+  .toast.show{ transform:translate(-50%, 0); }
+</style>
+</head>
+<body>
+
+<div class="deco" style="top:4%; left:3%;">🎾</div>
+<div class="deco" style="top:3%; right:4%;">🏐</div>
+<div class="deco" style="bottom:6%; left:4%;">⚾</div>
+<div class="deco" style="bottom:8%; right:3%;">🏀</div>
+
+<div id="wrap">
+  <header>
+    <div class="badge">
+      <span class="ball">⚽</span>
+      <h1>Score &amp; Learn</h1>
+    </div>
+    <p class="tagline">Learn football, one step at a time!</p>
+  </header>
+
+  <div class="stats-row">
+    <div class="stat-chip">🔥 0 day streak</div>
+    <div class="stat-chip">⭐ 0 stars</div>
+  </div>
+
+  <button type="button" id="installBtn" class="install-btn" style="display:none;">📲 Install App</button>
+
+  <div class="path-area" id="pathArea"></div>
+
+  <footer>
+    ⚽ New drills unlock as you go — using stuff you already<br>have at home, like shoeboxes and cones made of cups!
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const LEVELS = [
+    // Unit 1: Ball Mastery
+    { title: 'Meet the Ball', icon: '⚽', blurb: 'Say hello to your new best friend on the pitch' },
+    { title: 'Ball Control', icon: '🦶', blurb: 'Keep it close and calm, no matter what\'s happening around you' },
+    { title: 'Ball Mastery & Juggling', icon: '🤹', blurb: 'Keep it up in the air — no hands allowed!' },
+    { title: 'Shielding the Ball', icon: '🛡️', blurb: 'Use your body to keep a defender off the ball' },
+    { title: 'Weak Foot Ability', icon: '🔁', blurb: 'Train the foot you don\'t usually use' },
+    // Unit 2: Passing & Crossing
+    { title: 'Passing — Inside Foot', icon: '🎯', blurb: 'The pass every great player starts with' },
+    { title: 'Driven Pass', icon: '🚀', blurb: 'Add some zip so it can\'t be cut out' },
+    { title: 'Long Passing', icon: '🌤️', blurb: 'Switch the whole game with one big ball' },
+    { title: 'Through Balls', icon: '🧵', blurb: 'Thread a pass right between two defenders' },
+    { title: 'Crossing', icon: '🏳️', blurb: 'Whip the ball into the box for a teammate to attack' },
+    // Unit 3: Dribbling & Skills
+    { title: 'Dribbling', icon: '🏃', blurb: 'Move with the ball like it\'s part of you' },
+    { title: 'The Cruyff Turn', icon: '🌀', blurb: 'Vanish from a defender with one clever touch' },
+    { title: 'The Roulette', icon: '🌪️', blurb: 'Spin all the way around and leave them behind' },
+    { title: 'La Croqueta', icon: '🧀', blurb: 'Snap the ball side to side faster than they can react' },
+    { title: 'The Elastico', icon: '🪄', blurb: 'Snap it one way, whip it back — pure magic' },
+    { title: 'Fake Shot', icon: '🎭', blurb: 'Wind up like you\'re shooting, then go the other way' },
+    // Unit 4: Shooting & Finishing
+    { title: 'Curve Shot', icon: '🌙', blurb: 'Bend it like you mean it' },
+    { title: 'Shooting Power', icon: '🥅', blurb: 'Hit it so hard the net doesn\'t stand a chance' },
+    { title: 'The Volley', icon: '💥', blurb: 'Catch it out of the air and send it flying' },
+    { title: 'Free Kicks', icon: '🚩', blurb: 'Your shot at a free, unguarded strike' },
+    { title: 'Penalties', icon: '🧘', blurb: 'Just you, the keeper, and nerves of steel' },
+    { title: 'Heading — Attack & Defense', icon: '🙆', blurb: 'Win the ball in the air, both ways' },
+    // Unit 5: Defending & Physical
+    { title: 'Marking', icon: '🧱', blurb: 'Stick to your player like glue' },
+    { title: 'Interceptions', icon: '✋', blurb: 'Read the pass before it\'s even played' },
+    { title: 'Positioning', icon: '🗺️', blurb: 'Be in the right place before the ball even gets there' },
+    { title: 'Off-the-Ball Movement', icon: '🏃‍♂️', blurb: 'The smart runs that happen when you don\'t have the ball' },
+    { title: 'Strength', icon: '💪', blurb: 'Hold your ground when someone leans in' },
+    { title: 'Stamina', icon: '🫁', blurb: 'Build the engine for a full match' },
+    // Unit 6: Mental Game
+    { title: 'Reaction Speed', icon: '⚡', blurb: 'React in a blink when the ball takes a bounce' },
+    // Unit 7: Game Ready
+    { title: 'Game Day Ready', icon: '🏆', blurb: 'Everything you\'ve learned, all in one match' },
+  ];
+  const UNIT_STARTS = [
+    { index: 0,  name: 'Unit 1 · Ball Mastery' },
+    { index: 5,  name: 'Unit 2 · Passing & Crossing' },
+    { index: 10, name: 'Unit 3 · Dribbling & Skills' },
+    { index: 16, name: 'Unit 4 · Shooting & Finishing' },
+    { index: 22, name: 'Unit 5 · Defending & Physical' },
+    { index: 28, name: 'Unit 6 · Mental Game' },
+    { index: 29, name: 'Unit 7 · Game Ready' },
+  ];
+  const DIFFICULTY_TIER = Math.ceil(LEVELS.length / 5); // spreads 1★–5★ evenly across however many levels there are
+  function difficultyFor(i){
+    return Math.min(5, Math.floor(i / DIFFICULTY_TIER) + 1);
+  }
+  // a smooth left-right snake for any number of levels
+  function offsetFor(i){
+    return Math.round(88 * Math.sin(i * 0.85));
+  }
+
+  const pathArea = document.getElementById('pathArea');
+  const toast = document.getElementById('toast');
+  let toastTimer = null;
+
+  function showToast(msg, duration){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), duration || 2200);
+  }
+
+  LEVELS.forEach((lvl, i) => {
+    const unit = UNIT_STARTS.find(u => u.index === i);
+    if(unit){
+      const banner = document.createElement('div');
+      banner.className = 'unit-banner';
+      banner.textContent = unit.name;
+      pathArea.appendChild(banner);
+    }
+
+    const unlocked = i === 0; // only the first level is open for now
+    const difficulty = difficultyFor(i);
+    const node = document.createElement('div');
+    node.className = 'level-node';
+    node.style.transform = 'translateX(' + offsetFor(i) + 'px)';
+
+    const btn = document.createElement('div');
+    btn.className = 'node-btn ' + (unlocked ? 'unlocked' : 'locked');
+    btn.innerHTML =
+      '<span class="level-num">' + (i+1) + '</span>' +
+      (unlocked ? '' : '<span class="lock">🔒</span>') +
+      '<span>' + lvl.icon + '</span>' +
+      (unlocked ? '<span class="start-chip">START</span>' : '');
+
+    btn.addEventListener('click', () => {
+      if(unlocked){
+        showToast('🚧 "' + lvl.title + '" lessons are coming soon!');
+      } else {
+        showToast('🔒 Finish earlier levels to unlock "' + lvl.title + '"');
+      }
+    });
+
+    const label = document.createElement('div');
+    label.className = 'node-label';
+    const starsStr = '★'.repeat(difficulty) + '☆'.repeat(5 - difficulty);
+    label.innerHTML =
+      '<div class="node-title">' + lvl.title + '</div>' +
+      '<div class="node-blurb">' + lvl.blurb + '</div>' +
+      '<div class="node-stars">' + starsStr + '</div>';
+
+    node.appendChild(btn);
+    node.appendChild(label);
+    pathArea.appendChild(node);
+  });
+
+  // draw a dashed connector line through the node centers
+  function drawPath(){
+    const existing = pathArea.querySelector('svg');
+    if(existing) existing.remove();
+
+    const nodes = [...pathArea.querySelectorAll('.node-btn')];
+    const areaRect = pathArea.getBoundingClientRect();
+    const points = nodes.map(n => {
+      const r = n.getBoundingClientRect();
+      return {
+        x: r.left + r.width/2 - areaRect.left,
+        y: r.top + r.height/2 - areaRect.top
+      };
+    });
+
+    let d = '';
+    points.forEach((p, i) => {
+      if(i === 0) d += 'M ' + p.x + ' ' + p.y;
+      else {
+        const prev = points[i-1];
+        const midY = (prev.y + p.y) / 2;
+        d += ' C ' + prev.x + ' ' + midY + ', ' + p.x + ' ' + midY + ', ' + p.x + ' ' + p.y;
+      }
+    });
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', '#20180F');
+    path.setAttribute('stroke-width', '6');
+    path.setAttribute('stroke-dasharray', '2 16');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('fill', 'none');
+    svg.appendChild(path);
+    pathArea.insertBefore(svg, pathArea.firstChild);
+  }
+
+  window.addEventListener('load', drawPath);
+  window.addEventListener('resize', drawPath);
+  setTimeout(drawPath, 50);
+
+  // ---- install to home screen ----
+  const installBtn = document.getElementById('installBtn');
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  // iPadOS Safari reports itself as a Mac, so also check for touch support
+  const isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent) ||
+    (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+  let deferredInstallPrompt = null;
+
+  if(!isStandalone){
+    if(isIOS){
+      // iOS has no programmatic install prompt — show the button with manual steps
+      installBtn.style.display = '';
+      installBtn.addEventListener('click', () => {
+        showToast('📲 Tap the Share button in Safari\'s toolbar, then "Add to Home Screen"', 4200);
+      });
+    } else {
+      // Chrome/Android etc fire this event when the page is installable
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        installBtn.style.display = '';
+      });
+      installBtn.addEventListener('click', async () => {
+        if(!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        installBtn.style.display = 'none';
+      });
+      window.addEventListener('appinstalled', () => {
+        installBtn.style.display = 'none';
+      });
+    }
+  }
+  // ---- offline support ----
+  if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>
